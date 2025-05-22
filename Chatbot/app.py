@@ -1,6 +1,7 @@
 from flask import Flask, request
 import requests
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,36 +11,44 @@ PHONE_NUMBER_ID = os.getenv("PHONE_NUMBER_ID")
 
 app = Flask(__name__)
 
-# Estado de cada usuário (telefone como chave)
 usuarios = {}
 
-# Perguntas na ordem
+# Perguntas organizadas
 perguntas = [
-    "Qual seu nome completo?",
-    "Informe seu CPF:",
-    "Qual a sua data de nascimento?",
-    "Qual a sua idade?",
-    "Qual o seu sexo?",
-    "Qual o tipo de perfuração (ex: orelha, nariz, etc.)?",
-    "Escolha o material: Titânio ou Aço Cirúrgico?",
-    "Histórico de Saúde:
+    "Ótimo, a seguir vamos começar o seu agendamento! Qual seu nome completo?",
+    "Perfeito. Agora me diga seu CPF:",
+    "Qual sua data de nascimento?",
+    "Qual sua idade?",
+    "Qual seu sexo (masculino, feminino, outro)?",
+    "Em qual local você deseja a perfuração?",
+    "Informe o dia e horário desejado para realizar o procedimento.",
+    "Você prefere qual material? Titânio ou Aço Cirúrgico?",
+    "Agora vamos para algumas perguntas rápidas de saúde. Tudo bem? Responda com 'sim' ou 'não'.",
     "Você é fumante?",
-    "Você tem alergia?",
-    "Você está grávida?",
-    "Você tem hipertensão?",
-    "Você tem herpes?",
-    "Você tem alergia a medicações?",
-    "Você tem diabetes?",
-    "Você tem hepatite?",
-    "Você tem cardiopatia?",
-    "Você tem anemia?",
-    "Você tem depressão?",
-    "Você tem glaucoma?",
-    "Você é portador(a) de HIV?",
-    "Você tem alguma doença de pele?",
-    "Você tem câncer?",
-    "Você tem queloide?"
+    "Tem alguma alergia?",
+    "Está grávida?",
+    "Tem hipertensão?",
+    "Tem herpes?",
+    "Tem alergia a remédios?",
+    "Tem diabetes?",
+    "Já teve hepatite?",
+    "Tem algum problema no coração?",
+    "Tem anemia?",
+    "Tem depressão?",
+    "Tem glaucoma?",
+    "É portador(a) de HIV?",
+    "Tem alguma doença de pele?",
+    "Já teve câncer?",
+    "Tem tendência a queloide?"
 ]
+
+# Etapas que exigem validação de resposta
+validacoes = {
+    4: ["masculino", "feminino", "outro"],
+    7: ["titânio", "aço cirúrgico"],
+    **{i: ["sim", "não"] for i in range(9, 25)}
+}
+
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -50,60 +59,105 @@ def webhook():
         for entry in data["entry"]:
             for change in entry.get("changes", []):
                 value = change.get("value", {})
-                
-                # Só processar se vier mensagens (não responder a status ou outros eventos)
                 messages = value.get("messages")
                 if messages:
                     for message in messages:
                         number = message["from"]
                         text = message["text"]["body"]
-                        responder_usuario(number, text)
+                        responder_usuario(number, text.lower())  # converte para minúsculo
 
     return "OK", 200
 
 
 def responder_usuario(telefone, texto_recebido):
-    # Inicia novo atendimento se digitar 1
-    if texto_recebido.strip() == "1":
-        usuarios[telefone] = {"etapa": 0, "respostas": []}
+    tempo_atual = time.time()
+    texto = ""
+
+    if texto_recebido == "1":
+        usuarios[telefone] = {
+            "etapa": 0,
+            "respostas": [],
+            "ultima_interacao": tempo_atual
+        }
         texto = perguntas[0]
 
-    # Continua um atendimento em andamento
     elif telefone in usuarios:
-        etapa = usuarios[telefone]["etapa"]
-        usuarios[telefone]["respostas"].append(texto_recebido)
-        etapa += 1
-        if etapa < len(perguntas):
-            texto = perguntas[etapa]
-            usuarios[telefone]["etapa"] = etapa
-        else:
-            # Atendimento finalizado: envia resumo
-            respostas = usuarios[telefone]["respostas"]
+        usuario = usuarios[telefone]
+        etapa = usuario["etapa"]
+        ultima = usuario["ultima_interacao"]
+
+        # Duração da conexão sem resposta
+        if tempo_atual - ultima > 300:
             texto = (
-                "✅ Obrigado! Aqui está o resumo do seu agendamento:\n\n"
-                f"👤 Nome: {respostas[0]}\n"
-                f"🪪 CPF: {respostas[1]}\n"
-                f"📍 Perfuração: {respostas[2]}\n"
-                f"🔩 Material: {respostas[3]}\n\n"
-                "Entraremos em contato para finalizar o agendamento."
+                "⏱️ O atendimento foi encerrado por inatividade.\n"
+                "Caso deseje iniciar novamente, envie qualquer mensagem ou digite *1*."
             )
-            del usuarios[telefone]  # Limpa a sessão
+            del usuarios[telefone]
+        else:
+            # Verifica se resposta é válida
+            if etapa in validacoes and texto_recebido not in validacoes[etapa]:
+                opcoes = "', '".join(validacoes[etapa])
+                texto = f"Por favor, responda com uma das opções válidas: '{opcoes}'."
+            else:
+                usuario["respostas"].append(texto_recebido)
+                etapa += 1
 
-    elif texto_recebido.strip() == "2":
-        texto = "Você escolheu cancelar um agendamento. Informe seu nome e data do agendamento."
+                if etapa < len(perguntas):
+                    texto = perguntas[etapa]
+                    usuario["etapa"] = etapa
+                    usuario["ultima_interacao"] = tempo_atual
+                else:
+                    r = usuario["respostas"]
+                    texto = (
+                        "✅ *Resumo do seu atendimento:*\n\n"
+                        f"👤 *Nome:* {r[0]}\n"
+                        f"🪪 *CPF:* {r[1]}\n"
+                        f"🎂 *Nascimento:* {r[2]} (Idade: {r[3]})\n"
+                        f"🧑 *Sexo:* {r[4]}\n"
+                        f"📍 *Perfuração:* {r[5]}\n"
+                        f"📅 *Data e horário:* {r[6]}\n"
+                        f"🔩 *Material:* {r[7]}\n\n"
+                        "📋 *Informações de Saúde:*\n"
+                        f"Fumante: {r[9]}\n"
+                        f"Alergias: {r[10]}\n"
+                        f"Gravidez: {r[11]}\n"
+                        f"Hipertensão: {r[12]}\n"
+                        f"Herpes: {r[13]}\n"
+                        f"Alergia a remédios: {r[14]}\n"
+                        f"Diabetes: {r[15]}\n"
+                        f"Hepatite: {r[16]}\n"
+                        f"Cardiopatia: {r[17]}\n"
+                        f"Anemia: {r[18]}\n"
+                        f"Depressão: {r[19]}\n"
+                        f"Glaucoma: {r[20]}\n"
+                        f"HIV: {r[21]}\n"
+                        f"Doença de pele: {r[22]}\n"
+                        f"Câncer: {r[23]}\n"
+                        f"Queloide: {r[24]}\n\n"
+                        "📞 Entraremos em contato para confirmar o seu agendamento. Obrigado! 💙"
+                    )
+                    del usuarios[telefone]
 
-    elif texto_recebido.strip() == "3":
+    elif texto_recebido == "2":
+        texto = "Você escolheu cancelar um agendamento. Por favor, informe seu nome e a data do agendamento."
+
+    elif texto_recebido == "3":
         texto = "Veja nossos trabalhos e preços no Instagram: https://instagram.com/luarpiercing"
 
     else:
         texto = (
-            "Olá! Bem-vindo à Luar Clínica. Escolha uma opção:\n\n"
-            "1 - Agendar Perfuração\n"
-            "2 - Cancelar Agendamento\n"
-            "3 - Nossos trabalhos e preços\n"
-            "4 - Outro assunto"
+            "👋 Olá! Bem-vindo à *Luar Clínica*.\n\n"
+            "Escolha uma opção:\n"
+            "1️⃣ Agendar Perfuração (Apenas maiores de dezoito anos)\n"
+            "2️⃣ Cancelar Agendamento\n"
+            "3️⃣ Nossos trabalhos e preços\n"
+            "4️⃣ Outro assunto"
         )
 
+    enviar_mensagem_whatsapp(telefone, texto)
+
+
+def enviar_mensagem_whatsapp(telefone, texto):
     url = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
     headers = {
         "Authorization": f"Bearer {TOKEN}",
