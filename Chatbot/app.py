@@ -17,8 +17,28 @@ usuarios = {}
 perguntas = [
     "Qual seu nome completo?",
     "Informe seu CPF:",
+    "Qual a sua data de nascimento?",
+    "Qual a sua idade?",
+    "Qual o seu sexo?",
     "Qual o tipo de perfuração (ex: orelha, nariz, etc.)?",
-    "Escolha o material: Titânio ou Aço Cirúrgico?"
+    "Escolha o material: Titânio ou Aço Cirúrgico?",
+    "Histórico de Saúde:
+    "Você é fumante?",
+    "Você tem alergia?",
+    "Você está grávida?",
+    "Você tem hipertensão?",
+    "Você tem herpes?",
+    "Você tem alergia a medicações?",
+    "Você tem diabetes?",
+    "Você tem hepatite?",
+    "Você tem cardiopatia?",
+    "Você tem anemia?",
+    "Você tem depressão?",
+    "Você tem glaucoma?",
+    "Você é portador(a) de HIV?",
+    "Você tem alguma doença de pele?",
+    "Você tem câncer?",
+    "Você tem queloide?"
 ]
 
 @app.route("/webhook", methods=["POST"])
