@@ -4,6 +4,7 @@ from Core.tempo_sessao import SessionManager
 from Fluxos.fluxo_piercing import PiercingFlow
 from Fluxos.fluxo_queloide import KeloidFlow
 from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
+from Fluxos.fluxo_glanuloma import GranulomaFlow
 import os
 import time
 from dotenv import load_dotenv
@@ -17,7 +18,8 @@ sessions = SessionManager()
 flows = {
     "perfuração": PiercingFlow(),
     "queloide": KeloidFlow(),
-    "tatuagem": TattooRemovalFlow()
+    "tatuagem": TattooRemovalFlow(),
+    "granuloma": GranulomaFlow()
 }
 
 @app.route("/webhook", methods=["GET"])
@@ -57,7 +59,8 @@ def handle_message(phone, message):
                 "Escolha o procedimento:\n"
                 "1️⃣ Perfuração\n"
                 "2️⃣ Remoção de Queloide\n"
-                "3️⃣ Remoção de Tatuagem"
+                "3️⃣ Remoção de Tatuagem\n"
+                "4️⃣ Tratamento de Granuloma"
             )
         else:
             whatsapp.send_message(phone, "Olá! Bem-vindo à Luar Clínica 🌙. Digite *1* para iniciar.")
@@ -71,11 +74,12 @@ def handle_message(phone, message):
     session = sessions.sessions[phone]
 
     if session["procedure_type"] == "menu":
-        if message in ["1", "2", "3"]:
+        if message in ["1", "2", "3", "4"]:
             procedure_types = {
                 "1": "perfuração",
                 "2": "queloide",
-                "3": "tatuagem"
+                "3": "tatuagem",
+                "4": "granuloma"
             }
             session["procedure_type"] = procedure_types[message]
             session["step"] = 0
@@ -86,7 +90,8 @@ def handle_message(phone, message):
                 "Opção inválida. Escolha:\n"
                 "1️⃣ Perfuração\n"
                 "2️⃣ Remoção de Queloide\n"
-                "3️⃣ Remoção de Tatuagem"
+                "3️⃣ Remoção de Tatuagem\n"
+                "4️⃣ Tratamento de Granuloma"
             )
         return
 
