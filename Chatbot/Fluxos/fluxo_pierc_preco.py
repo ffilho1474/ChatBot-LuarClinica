@@ -1,6 +1,5 @@
 from Fluxos.fluxo_base_info import InfoFlow
 
-# Conteúdo formatado para piercing
 PIERCING_CONTENT = """
 💎 *PREÇOS E LOCAIS DE PERFURAÇÃO* 💎
 
@@ -22,7 +21,8 @@ PIERCING_CONTENT = """
 
 Restante das perfurações 50,00 com piercing de aço cirúrgico e 90 com piercing de titânio.
 
-🌙 *Agendamentos via opção 1* 
+🌙 *Agendamentos via opção 1*
+"📞 Dúvidas? Chame-nos pelo WhatsApp (+55 69 9397-9351)"
 """
 
 class PrecoPiercingFlow(InfoFlow):

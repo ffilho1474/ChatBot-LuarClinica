@@ -6,6 +6,7 @@ from Fluxos.fluxo_queloide import KeloidFlow
 from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
 from Fluxos.fluxo_glanuloma import GranulomaFlow
 from Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
+from Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
 import os
 import time
 from dotenv import load_dotenv
@@ -21,7 +22,8 @@ flows = {
     "queloide": KeloidFlow(),
     "tatuagem": TattooRemovalFlow(),
     "granuloma": GranulomaFlow(),
-    "precos_piercing": PrecoPiercingFlow()
+    "precos_piercing": PrecoPiercingFlow(),
+    "cuidados_piercing": CuidadosPiercingFlow()
 }
 
 @app.route("/webhook", methods=["GET"])
@@ -59,11 +61,12 @@ def handle_message(phone, message):
             sessions.create_session(phone, "menu")
             whatsapp.send_message(phone, 
                 "Escolha alguma das opções abaixo: (Atendimento apenas para maiores de 18 anos) \n"
-                "1️⃣ Perfuração\n"
-                "2️⃣ Remoção de Queloide\n"
-                "3️⃣ Remoção de Tatuagem\n"
-                "4️⃣ Tratamento de Granuloma\n"
-                "5️⃣ Preços da Perfuração"
+                "1️⃣ Agendar Perfuração\n"
+                "2️⃣ Agendar Remoção de Queloide\n"
+                "3️⃣ Agendar Remoção de Tatuagem\n"
+                "4️⃣ Agendar Tratamento de Granuloma\n"
+                "5️⃣ Preços da Perfuração\n"
+                "6️⃣ Cuidados pós-perfuração"
             )
         else:
             whatsapp.send_message(phone, "Olá! Bem-vindo à Luar Clínica 🌙. Digite *1* para iniciar.")
@@ -77,13 +80,14 @@ def handle_message(phone, message):
     session = sessions.sessions[phone]
 
     if session["procedure_type"] == "menu":
-        if message in ["1", "2", "3", "4", "5"]:
+        if message in ["1", "2", "3", "4", "5", "6"]:
             procedure_types = {
                 "1": "perfuração",
                 "2": "queloide",
                 "3": "tatuagem",
                 "4": "granuloma",
-                "5": "precos_piercing"
+                "5": "precos_piercing",
+                "6": "cuidados_piercing"
             }
             session["procedure_type"] = procedure_types[message]
             session["step"] = 0
@@ -95,6 +99,11 @@ def handle_message(phone, message):
             whatsapp.send_message(phone, flow.generate_summary([]))
             sessions.end_session(phone)
 
+        elif message == "6":
+            flow = flows["cuidados_piercing"]
+            whatsapp.send_message(phone, flow.generate_summary([]))
+            sessions.end_session(phone)
+
         else:
             whatsapp.send_message(phone, 
                 "Opção inválida. Escolha:\n"
@@ -102,7 +111,8 @@ def handle_message(phone, message):
                 "2️⃣ Remoção de Queloide\n"
                 "3️⃣ Remoção de Tatuagem\n"
                 "4️⃣ Tratamento de Granuloma\n"
-                "5️⃣ Preços da Perfuração"
+                "5️⃣ Preços da Perfuração\n"
+                "6️⃣ Cuidados pós-perfuração"
             )
         return
 
