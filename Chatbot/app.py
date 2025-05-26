@@ -5,6 +5,7 @@ from Fluxos.fluxo_piercing import PiercingFlow
 from Fluxos.fluxo_queloide import KeloidFlow
 from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
 from Fluxos.fluxo_glanuloma import GranulomaFlow
+from Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
 import os
 import time
 from dotenv import load_dotenv
@@ -19,7 +20,8 @@ flows = {
     "perfuração": PiercingFlow(),
     "queloide": KeloidFlow(),
     "tatuagem": TattooRemovalFlow(),
-    "granuloma": GranulomaFlow()
+    "granuloma": GranulomaFlow(),
+    "precos_piercing": PrecoPiercingFlow()
 }
 
 @app.route("/webhook", methods=["GET"])
@@ -56,11 +58,12 @@ def handle_message(phone, message):
         if message == "1":
             sessions.create_session(phone, "menu")
             whatsapp.send_message(phone, 
-                "Escolha o procedimento:\n"
+                "Escolha alguma das opções abaixo: (Atendimento apenas para maiores de 18 anos) \n"
                 "1️⃣ Perfuração\n"
                 "2️⃣ Remoção de Queloide\n"
                 "3️⃣ Remoção de Tatuagem\n"
-                "4️⃣ Tratamento de Granuloma"
+                "4️⃣ Tratamento de Granuloma\n"
+                "5️⃣ Preços da Perfuração"
             )
         else:
             whatsapp.send_message(phone, "Olá! Bem-vindo à Luar Clínica 🌙. Digite *1* para iniciar.")
@@ -74,24 +77,32 @@ def handle_message(phone, message):
     session = sessions.sessions[phone]
 
     if session["procedure_type"] == "menu":
-        if message in ["1", "2", "3", "4"]:
+        if message in ["1", "2", "3", "4", "5"]:
             procedure_types = {
                 "1": "perfuração",
                 "2": "queloide",
                 "3": "tatuagem",
-                "4": "granuloma"
+                "4": "granuloma",
+                "5": "precos_piercing"
             }
             session["procedure_type"] = procedure_types[message]
             session["step"] = 0
             flow = flows[session["procedure_type"]]
             whatsapp.send_message(phone, flow.get_question(0))
+
+        if message == "5":
+            flow = flows["precos_piercing"]
+            whatsapp.send_message(phone, flow.generate_summary([]))
+            sessions.end_session(phone)
+
         else:
             whatsapp.send_message(phone, 
                 "Opção inválida. Escolha:\n"
                 "1️⃣ Perfuração\n"
                 "2️⃣ Remoção de Queloide\n"
                 "3️⃣ Remoção de Tatuagem\n"
-                "4️⃣ Tratamento de Granuloma"
+                "4️⃣ Tratamento de Granuloma\n"
+                "5️⃣ Preços da Perfuração"
             )
         return
 
