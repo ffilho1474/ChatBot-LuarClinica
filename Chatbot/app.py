@@ -90,19 +90,16 @@ def handle_message(phone, message):
                 "6": "cuidados_piercing"
             }
             session["procedure_type"] = procedure_types[message]
-            session["step"] = 0
-            flow = flows[session["procedure_type"]]
-            whatsapp.send_message(phone, flow.get_question(0))
-
-        if message == "5":
-            flow = flows["precos_piercing"]
-            whatsapp.send_message(phone, flow.generate_summary([]))
-            sessions.end_session(phone)
-
-        elif message == "6":
-            flow = flows["cuidados_piercing"]
-            whatsapp.send_message(phone, flow.generate_summary([]))
-            sessions.end_session(phone)
+            # Fluxos informativos (opções 5/6)
+            if message in ["5", "6"]:
+                flow = flows[session["procedure_type"]]
+                whatsapp.send_message(phone, flow.generate_summary([]))
+                sessions.end_session(phone)
+            else:
+                # Fluxos com perguntas (opções 1-4)
+                session["step"] = 0
+                flow = flows[session["procedure_type"]]
+                whatsapp.send_message(phone, flow.get_question(0))
 
         else:
             whatsapp.send_message(phone, 
