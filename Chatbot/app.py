@@ -138,7 +138,7 @@ def process_flow(phone, message, flow_type):
         whatsapp.send_message(phone, summary)
         sessions.end_session(phone)
 
-if __name__ == "__main__":
-    print("🚀 Iniciando servidor Flask...")
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+# if __name__ == "__main__": 
+  #  print("🚀 Iniciando servidor Flask...")
+  #  port = int(os.environ.get("PORT", 5000))
+  #  app.run(host="0.0.0.0", port=port, debug=True)  
