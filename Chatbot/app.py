@@ -7,6 +7,9 @@ from .Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
 from .Fluxos.fluxo_glanuloma import GranulomaFlow
 from .Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
 from .Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
+
+import threading
+import requests
 import os
 import time
 from dotenv import load_dotenv
@@ -25,6 +28,11 @@ flows = {
     "precos_piercing": PrecoPiercingFlow(),
     "cuidados_piercing": CuidadosPiercingFlow()
 }
+
+@app.route("/")
+def home():
+    return "🌙 Chatbot Luar Clínica 🌙", 200  #testando se está funcionando
+
 
 @app.route("/webhook", methods=["GET"])
 def verify_webhook():
@@ -137,6 +145,13 @@ def process_flow(phone, message, flow_type):
         summary = flow.generate_summary(session["answers"])
         whatsapp.send_message(phone, summary)
         sessions.end_session(phone)
+
+def ping():
+    requests.get("https://chatbot-luarclinica.onrender.com/webhook")
+    threading.Timer(600, ping).start()  # Ping a cada 10 min
+
+ping()  # Iniciar na execução
+
 
 if __name__ == "__main__": 
     print("🚀 Iniciando servidor Flask...")
