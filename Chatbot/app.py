@@ -1,12 +1,12 @@
 from flask import Flask, request
-from Core.whatsapp_api import WhatsAppAPI
-from Core.tempo_sessao import SessionManager
-from Fluxos.fluxo_piercing import PiercingFlow
-from Fluxos.fluxo_queloide import KeloidFlow
-from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
-from Fluxos.fluxo_glanuloma import GranulomaFlow
-from Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
-from Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
+from .Core.whatsapp_api import WhatsAppAPI
+from .Core.tempo_sessao import SessionManager
+from .Fluxos.fluxo_piercing import PiercingFlow
+from .Fluxos.fluxo_queloide import KeloidFlow
+from .Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
+from .Fluxos.fluxo_glanuloma import GranulomaFlow
+from .Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
+from .Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
 import os
 import time
 from dotenv import load_dotenv
