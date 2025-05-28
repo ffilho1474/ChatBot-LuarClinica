@@ -1,4 +1,4 @@
-from Fluxos.fluxo_base import BaseFlow
+from Chatbot.Fluxos.fluxo_base import BaseFlow
 
 class InfoFlow(BaseFlow):
     """
