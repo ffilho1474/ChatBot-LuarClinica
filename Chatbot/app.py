@@ -1,12 +1,12 @@
 from flask import Flask, request
-from .Core.whatsapp_api import WhatsAppAPI
-from .Core.tempo_sessao import SessionManager
-from .Fluxos.fluxo_piercing import PiercingFlow
-from .Fluxos.fluxo_queloide import KeloidFlow
-from .Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
-from .Fluxos.fluxo_glanuloma import GranulomaFlow
-from .Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
-from .Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
+from Core.whatsapp_api import WhatsAppAPI
+from Core.tempo_sessao import SessionManager
+from Fluxos.fluxo_piercing import PiercingFlow
+from Fluxos.fluxo_queloide import KeloidFlow
+from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
+from Fluxos.fluxo_glanuloma import GranulomaFlow
+from Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
+from Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
 
 import threading
 import requests
@@ -68,7 +68,7 @@ def handle_message(phone, message):
         if message == "1":
             sessions.create_session(phone, "menu")
             whatsapp.send_message(phone, 
-                "Escolha alguma das opções abaixo: (Atendimento apenas para maiores de 18 anos) \n"
+                "Escolha alguma das opções abaixo, em caso de agendamento vai ser pedido alguns dados pessoais para cadastrarmos na sua ficha de paciente: (Atendimento apenas para maiores de 18 anos) \n"
                 "1️⃣ Agendar Perfuração\n"
                 "2️⃣ Agendar Remoção de Queloide\n"
                 "3️⃣ Agendar Remoção de Tatuagem\n"
@@ -146,14 +146,7 @@ def process_flow(phone, message, flow_type):
         whatsapp.send_message(phone, summary)
         sessions.end_session(phone)
 
-def ping():
-    requests.get("https://chatbot-luarclinica.onrender.com/webhook")
-    threading.Timer(600, ping).start()  # Ping a cada 10 min
-
-ping()  # Iniciar na execução
-
-
 if __name__ == "__main__": 
     print("🚀 Iniciando servidor Flask...")
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=False)  
+    app.run(host="0.0.0.0", port=port, debug=True)  

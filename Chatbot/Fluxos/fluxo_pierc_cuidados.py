@@ -1,4 +1,4 @@
-from Chatbot.Fluxos.fluxo_base_info import InfoFlow
+from Fluxos.fluxo_base_info import InfoFlow
 
 CUIDADOS_CONTENT = """
 💎 *CUIDADOS PÓS-PERFURAÇÃO* 💎
