@@ -74,13 +74,15 @@ def handle_message(phone, message):
     if phone not in sessions.sessions:
         if message == "1":
             sessions.create_session(phone, "consentimento")
+            # Modifique esta mensagem em app.py
             whatsapp.send_message(phone, 
                 "🔒 *PROTEÇÃO DE DADOS*\n"
-                "Para seu agendamento, precisamos coletar:\n"
+                "Leia nossa política completa:\n"
+                "https://luarclinica.com.br/\n\n"
+                "Para agendamento coletaremos:\n"
                 "- Nome completo\n"
                 "- Idade\n"
                 "- Local do procedimento\n\n"
-                "Seus dados serão usados apenas para agendamento e não serão compartilhados.\n\n"
                 "*Digite ACEITO para continuar ou CANCELAR para sair*"
             )
         else:
