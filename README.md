@@ -43,7 +43,6 @@ Chatbot/
 │
 └── app.py                    # Servidor Flask (webhook)
 
-
 ⚙️ Configuração
 Pré-requisitos
 
@@ -58,50 +57,89 @@ Pré-requisitos
 Passo a Passo
 
     Clone o repositório:
-    git clone https://github.com/seu-usuario/luar-chatbot.git
-    cd luar-chatbot
+
+bash
+
+git clone https://github.com/seu-usuario/luar-chatbot.git
+cd luar-chatbot
 
     Instale as dependências:
-    pip install flask python-dotenv requests
+
+bash
+
+pip install flask python-dotenv requests
 
     Crie o arquivo .env:
-    # Tokens da Meta
-    WHATSAPP_TOKEN="seu_token_da_api"
-    VERIFY_TOKEN="seu_token_de_verificacao"
-    PHONE_NUMBER_ID="ID_do_seu_numero"
 
-    # Configurações opcionais
-    SESSION_TIMEOUT=300  # 5 minutos em segundos
+ini
+
+# Tokens da Meta
+WHATSAPP_TOKEN="seu_token_da_api"
+VERIFY_TOKEN="seu_token_de_verificacao"
+PHONE_NUMBER_ID="ID_do_seu_numero"
+
+# Configurações opcionais
+SESSION_TIMEOUT=300  # 5 minutos em segundos
 
 🚀 Como Executar
 
 Modo desenvolvimento:
+bash
+
 python app.py
 
+Modo produção (com Gunicorn):
+bash
+
+gunicorn --bind 0.0.0.0:5000 app:app
 
 🔍 Fluxo de Mensagens
 
-Início
-→ Usuário envia 1
-← Bot solicita consentimento
+    Início
+    → Usuário envia 1
+    ← Bot solicita consentimento
 
-Consentimento
-→ Usuário responde ACEITO
-← Bot mostra menu:
+    Consentimento
+    → Usuário responde ACEITO
+    ← Bot mostra menu:
+    plaintext
 
+1️⃣ Perfuração | 2️⃣ Queloide  
+3️⃣ Tatuagem  | 4️⃣ Granuloma  
+5️⃣ Preços    | 6️⃣ Cuidados
 
+Agendamento (exemplo: piercing)
+← Bot pergunta:
+plaintext
+
+Qual seu nome completo?  
+➡️ [Usuário responde]  
+← Qual sua idade?  
+➡️ [Usuário responde]  
+... (20 perguntas)  
+
+Confirmação
+← Bot envia resumo e finaliza:
+plaintext
+
+    ✨ RESUMO DO AGENDAMENTO ✨  
+    👤 Nome: Maria S.  
+    📅 Data: 15/06 14h  
+    🏥 Saúde: Não fumante, sem alergias...  
 
 🔒 Compliance LGPD
 
-Dados coletados:
+    Dados coletados:
 
-Nome completo (armazenado mascarado)
+        Nome completo (armazenado mascarado)
 
-Idade
+        Idade
 
-Informações de saúde (apenas com CONCORDO)
+        Informações de saúde (apenas com CONCORDO)
 
-Proteções:
+    Proteções:
+    python
+
     # Exemplo de sanitização (whatsapp_api.py)
     def sanitize_message(self, message):
         sensitive_terms = ["CPF", "RG", "cartão"]
@@ -109,15 +147,14 @@ Proteções:
             message = message.replace(term, "[DADO PROTEGIDO]")
         return message
 
-
 📬 Suporte Técnico
 
 Equipe Luar Clínica
 ✉️ admin@luarclinica.com.br
 📞 +55 69 9397-9351
 
+Política de Privacidade | Termos de Uso
+
 Desenvolvedor
 ✉️ admin@luarclinica.com.br
-
-Política de Privacidade | Termos de Uso : https://luarclinica.com.br/
-
+🔗 luarclinica.com.br
