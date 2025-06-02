@@ -1,4 +1,4 @@
-from Chatbot.Fluxos.fluxo_base import BaseFlow
+from Fluxos.fluxo_base import BaseFlow
 
 class InfoFlow(BaseFlow):
     """
@@ -8,7 +8,7 @@ class InfoFlow(BaseFlow):
     def __init__(self, content):
         super().__init__()
         self.content = content
-        self.questions = []  # Fluxos informativos não têm perguntas
+        self.questions = []
         self.validations = {}
 
     def get_question(self, step):
@@ -18,4 +18,4 @@ class InfoFlow(BaseFlow):
         return True
 
     def generate_summary(self, answers):
-        return self.content  # Retorna o conteúdo fixo
+        return self.content

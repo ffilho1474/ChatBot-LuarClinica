@@ -1,4 +1,4 @@
-from Chatbot.Fluxos.fluxo_base_info import InfoFlow
+from Fluxos.fluxo_base_info import InfoFlow
 
 CUIDADOS_CONTENT = """
 💎 *CUIDADOS PÓS-PERFURAÇÃO* 💎
@@ -8,8 +8,8 @@ Após realizar uma perfuração, é essencial seguir alguns cuidados para garant
 3️⃣ *Não Retire a Joia*: Mantenha a joia no local até que a perfuração esteja completamente cicatrizada, geralmente de 6 a 8 semanas.
 4️⃣ *Faça compressa*: Com soro fisiológico morno, faça compressa pelomenos 3x na semana.
 
-"📞 Dúvidas? Chame-nos pelo WhatsApp (+55 69 9397-9351)\n"
-"💙 Agradecemos sua confiança!"
+📞 Dúvidas? Chame-nos pelo WhatsApp (+55 69 9397-9351)\"
+💙 Agradecemos sua confiança!
 
 """
 class CuidadosPiercingFlow(InfoFlow):
