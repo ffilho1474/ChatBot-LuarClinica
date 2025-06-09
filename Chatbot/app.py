@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from Core.whatsapp_api import WhatsAppAPI
 from Core.tempo_sessao import SessionManager
 from Fluxos.fluxo_piercing import PiercingFlow
@@ -46,6 +46,11 @@ def verify_webhook():
     print("❌ Falha na verificação")
     return "Erro na verificação", 403
 
+    if request.method == 'POST':
+        data = request.get_json()
+        print(f"📩 Evento recebido: {data}")  # Log seguro
+        return jsonify({"status": "success"}), 200
+    
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
