@@ -53,7 +53,7 @@ class KeloidFlow(BaseFlow):
             f"• Alergias: {answers[6].capitalize()}\n"
         )
         
-        # Rodapé com informações de proteção
+        # Rodapé com informações de LGPD
         footer = (
             "\n🔹 *PRÓXIMOS PASSOS*\n"
             "📲 Você receberá uma confirmação do agendamento via WhatsApp.\n"

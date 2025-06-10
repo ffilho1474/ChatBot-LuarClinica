@@ -82,7 +82,7 @@ class PiercingFlow(BaseFlow):
             f"{health_responses}"
         )
         
-        # Rodapé com informações de proteção
+        # Rodapé com informações de LGPD
         footer = (
             "\n\n🔹 *PRÓXIMOS PASSOS*\n"
             "📲 Você receberá uma confirmação do agendamento via WhatsApp.\n"
