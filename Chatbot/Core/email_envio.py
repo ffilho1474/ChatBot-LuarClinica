@@ -60,16 +60,18 @@ class EmailManager:
             
             print("iniciando validação das variáveis de ambiente ✨")
             msg = MIMEMultipart()
-            msg["From"] = f"Feedback Luar Clínica <{self.email_user}>"
+            msg["From"] = self.email_user
             msg["To"] = self.clinic_email
             msg["Subject"] = f"✨ Feedback recebido - {masked_phone}"
             msg.attach(MIMEText(html_content, "html"))
-            print("variáveis inicializadas corretamente ✅")
+            print("variáveis inicializadas corretamente ✅"
+                  + str(self.smtp_server) + " |" + str(self.smtp_port) + " |" + str(self.email_user) + " |" + str(self.email_password) + " |" + str(self.clinic_email)
+                  )
             
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.email_user, self.email_password)
-                server.send_message(msg)
+                server.sendmail(self.email_user,self.clinic_email,msg.as_string())
 
             print(f"📧 Feedback enviado para {self.clinic_email}")
             return True
