@@ -1,6 +1,8 @@
 from flask import Flask, request, jsonify
 from Core.whatsapp_api import WhatsAppAPI
 from Core.tempo_sessao import SessionManager
+from Core.email_envio import EmailManager
+
 from Fluxos.fluxo_piercing import PiercingFlow
 from Fluxos.fluxo_queloide import KeloidFlow
 from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
@@ -8,15 +10,19 @@ from Fluxos.fluxo_glanuloma import GranulomaFlow
 from Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
 from Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
 
+
 import os
 import time
 from dotenv import load_dotenv
 
 load_dotenv()
 
+
+#Inicializar Core
 app = Flask(__name__)
 whatsapp = WhatsAppAPI()
 sessions = SessionManager()
+email_manager = EmailManager()
 
 flows = {
     "perfuração": PiercingFlow(),
@@ -68,6 +74,17 @@ def webhook():
     return "OK", 200
 
 def handle_message(phone, message):
+    
+    if phone in sessions.sessions and sessions.sessions[phone].get("waiting_feedback"):
+        if message.strip():
+            email_manager.send_feedback_email(phone, message)
+            whatsapp.send_message(phone, "💙 Muito obrigado pelo seu feedback! Tenha um ótimo dia 🌙")
+            sessions.end_session(phone)
+        else:
+            whatsapp.send_message(phone, "Por favor, digite seu feedback ou envie uma mensagem.")
+        return
+    
+    
     print(f"📞 Mensagem de {phone[:5]}...")  # Não logar o número completo
 
     # Comando para exclusão de dados
@@ -207,7 +224,17 @@ def process_flow(phone, message, flow_type):
     else:
         summary = flow.generate_summary(session["answers"])
         whatsapp.send_message(phone, summary)
-        sessions.end_session(phone)
+
+        # ✅ NOVO BLOCO DE FEEDBACK APÓS O FLUXO CONCLUIR
+        feedback_message = (
+            "\n✨ O que achou do nosso atendimento?\n"
+            "Sua opinião é muito importante para nós!\n"
+            "Caso queira, envie sugestões ou melhorias. 💙"
+        )
+        whatsapp.send_message(phone, feedback_message)
+        
+        sessions.sessions[phone]["waiting_feedback"] = True
+
 
 if __name__ == "__main__": 
     print("🚀 Iniciando servidor Flask...")

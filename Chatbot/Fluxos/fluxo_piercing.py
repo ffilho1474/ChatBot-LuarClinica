@@ -9,7 +9,7 @@ class PiercingFlow(BaseFlow):
             "Em qual local você deseja a perfuração?",
             "Informe o dia e horário desejado para realizar o procedimento.",
             "Você prefere qual material? Titânio ou Aço Cirúrgico?",
-            "Agora vamos para algumas perguntas rápidas de saúde. Tudo bem? Responda com 'sim' ou 'não'.",
+            "Agora vamos fazer 16 perguntas rápidas que são obrigatórias para a sua ficha de sáude. Responda com '*s/n*' para *Sim* ou *Não*",
             "Você é fumante?",
             "Tem alguma alergia?",
             "Está grávida?",
@@ -28,9 +28,10 @@ class PiercingFlow(BaseFlow):
             "Tem tendência a queloide?"
         ]
         
+        # Validações atualizadas para aceitar diferentes formas de sim/não
         self.validations = {
             4: ["titânio", "aço cirúrgico"],
-            **{i: ["sim", "não"] for i in range(5, 22)}
+            **{i: ["sim", "s", "não", "n", "nao"] for i in range(5, 22)}
         }
 
     def get_question(self, step):
@@ -38,7 +39,18 @@ class PiercingFlow(BaseFlow):
 
     def validate_answer(self, step, answer):
         if step in self.validations:
-            normalized_answer = answer.lower().strip().replace("nao", "não")
+            # Normaliza a resposta para minúsculas e remove espaços
+            normalized_answer = answer.lower().strip()
+            
+            # Substitui variações de "não"
+            normalized_answer = normalized_answer.replace("nao", "não")
+            
+            # Aceita diferentes formas de sim/não
+            if normalized_answer in ["s", "sim"]:
+                return True
+            elif normalized_answer in ["n", "não"]:
+                return True
+                
             return normalized_answer in self.validations[step]
         return True
 
@@ -48,6 +60,15 @@ class PiercingFlow(BaseFlow):
         if len(parts) > 1:
             return f"{parts[0]} {parts[-1][0]}."
         return parts[0] if parts else name
+
+    def normalize_health_answer(self, answer):
+        """Normaliza a resposta para formato padrão (sim/não)"""
+        normalized = answer.lower().strip()
+        if normalized in ["s", "sim"]:
+            return "sim"
+        elif normalized in ["n", "nao", "não"]:
+            return "não"
+        return normalized
 
     def generate_summary(self, answers):
         # Seção 1: Dados Pessoais (mascarados)
@@ -65,7 +86,7 @@ class PiercingFlow(BaseFlow):
             f"• Material Escolhido: {answers[4].capitalize()}\n"
         )
         
-        # Seção 3: Saúde (formatando respostas SIM/NÃO)
+        # Seção 3: Saúde (formatando respostas SIM/NÃO com normalização)
         health_questions = [
             "Fumante", "Alergias", "Gravidez", "Hipertensão", "Herpes",
             "Alergia a remédios", "Diabetes", "Hepatite", "Problema cardíaco",
@@ -74,7 +95,7 @@ class PiercingFlow(BaseFlow):
         ]
         
         health_responses = "\n".join(
-            f"• {q}: {'✅ Sim' if answers[i+5].lower().replace('nao', 'não') == 'sim' else '❌ Não'}"
+            f"• {q}: {'✅ Sim' if self.normalize_health_answer(answers[i+5]) == 'sim' else '❌ Não'}"
             for i, q in enumerate(health_questions))
         
         health_data = (
