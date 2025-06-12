@@ -9,6 +9,7 @@ from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
 from Fluxos.fluxo_glanuloma import GranulomaFlow
 from Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
 from Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
+from Fluxos.fluxo_sugestão import SugestaoFlow
 
 
 import os
@@ -30,7 +31,8 @@ flows = {
     "tatuagem": TattooRemovalFlow(),
     "granuloma": GranulomaFlow(),
     "precos_piercing": PrecoPiercingFlow(),
-    "cuidados_piercing": CuidadosPiercingFlow()
+    "cuidados_piercing": CuidadosPiercingFlow(),
+    "sugestão": SugestaoFlow()
 }
 
 # Fluxos que requerem consentimento de saúde
@@ -129,7 +131,8 @@ def handle_message(phone, message):
                 "3️⃣ Agendar Remoção de Tatuagem\n"
                 "4️⃣ Agendar Tratamento de Granuloma\n"
                 "5️⃣ Preços da Perfuração\n"
-                "6️⃣ Cuidados pós-perfuração"
+                "6️⃣ Cuidados pós-perfuração\n"
+                "7️⃣ Sugestões de Melhorias"
             )
         else:
             whatsapp.send_message(phone, "Agendamento cancelado. Obrigada!")
@@ -156,14 +159,15 @@ def handle_message(phone, message):
         return
 
     if session["procedure_type"] == "menu":
-        if message in ["1", "2", "3", "4", "5", "6"]:
+        if message in ["1", "2", "3", "4", "5", "6", "7"]:
             procedure_types = {
                 "1": "perfuração",
                 "2": "queloide",
                 "3": "tatuagem",
                 "4": "granuloma",
                 "5": "precos_piercing",
-                "6": "cuidados_piercing"
+                "6": "cuidados_piercing",
+                "7": "sugestão"
             }
             chosen_flow = procedure_types[message]
             session["procedure_type"] = chosen_flow
@@ -197,7 +201,8 @@ def handle_message(phone, message):
                 "3️⃣ Remoção de Tatuagem\n"
                 "4️⃣ Tratamento de Granuloma\n"
                 "5️⃣ Preços da Perfuração\n"
-                "6️⃣ Cuidados pós-perfuração"
+                "6️⃣ Cuidados pós-perfuração\n"
+                "7️⃣ Sugestões de Melhorias"
             )
         return
 
@@ -225,15 +230,21 @@ def process_flow(phone, message, flow_type):
         summary = flow.generate_summary(session["answers"])
         whatsapp.send_message(phone, summary)
 
-        # ✅ NOVO BLOCO DE FEEDBACK APÓS O FLUXO CONCLUIR
-        feedback_message = (
-            "\n✨ O que achou do nosso atendimento?\n"
-            "Sua opinião é muito importante para nós!\n"
-            "Caso queira, envie sugestões ou melhorias. 💙"
-        )
-        whatsapp.send_message(phone, feedback_message)
-        
-        sessions.sessions[phone]["waiting_feedback"] = True
+        # ✅ Tratamento diferenciado para o fluxo de sugestão:
+        if flow_type == "sugestão":
+            email_manager.send_feedback_email(phone, session["answers"][0])
+            whatsapp.send_message(phone, "💙 Sua sugestão foi enviada com sucesso! Muito obrigado 🌙")
+            sessions.end_session(phone)
+        else:
+            # ✅ Fluxo normal: feedback padrão
+            feedback_message = (
+                "\n✨ O que achou do nosso atendimento?\n"
+                "Sua opinião é muito importante para nós!\n"
+                "Caso queira, envie sugestões ou melhorias. 💙"
+            )
+            whatsapp.send_message(phone, feedback_message)
+            sessions.sessions[phone]["waiting_feedback"] = True
+
 
 
 if __name__ == "__main__": 
