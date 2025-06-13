@@ -76,15 +76,20 @@ def webhook():
     return "OK", 200
 
 def handle_message(phone, message):
-    
-    if phone in sessions.sessions and sessions.sessions[phone].get("waiting_feedback"):
-        if message.strip():
-            email_manager.send_feedback_email(phone, message)
-            whatsapp.send_message(phone, "💙 Muito obrigado pelo seu feedback! Tenha um ótimo dia 🌙")
-            sessions.end_session(phone)
-        else:
-            whatsapp.send_message(phone, "Por favor, digite seu feedback ou envie uma mensagem.")
+    # 🔄 Checagem global de retorno ao menu
+    if message in ["menu", "voltar", "inicio"]:
+        sessions.end_session(phone)
+        whatsapp.send_message(phone, "🔄 Retornando ao menu principal...")
+        whatsapp.send_message(phone, "Escolha alguma das opções abaixo, em caso de agendamento vamos pedir alguns dados pessoais para cadastrarmos na sua ficha de paciente: (Atendimento apenas para maiores de 18 anos) \n"
+            "1️⃣ Agendar Perfuração\n"
+            "2️⃣ Agendar Remoção de Queloide\n"
+            "3️⃣ Agendar Remoção de Tatuagem\n"
+            "4️⃣ Agendar Tratamento de Granuloma\n"
+            "5️⃣ Preços da Perfuração\n"
+            "6️⃣ Cuidados pós-perfuração\n"
+            "7️⃣ Sugestões de Melhorias")
         return
+
     
     
     print(f"📞 Mensagem de {phone[:5]}...")  # Não logar o número completo
