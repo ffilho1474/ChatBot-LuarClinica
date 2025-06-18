@@ -15,23 +15,28 @@ class EmailManager:
         self.email_password = os.getenv("EMAIL_PASSWORD")  
         self.clinic_email = os.getenv("CLINIC_EMAIL") 
 
-    def _load_template(self, template_path="Templates_HTML\agendamento.html"):
-        with open(template_path, "r", encoding="utf-8") as file:
+    def _load_template(self, template_path = "../Templates_HTML/agendamento.html"):
+        base_dir = os.path.dirname(os.path.abspath(__file__))  # Diretório do email_envio.py
+        full_path = os.path.join(base_dir, template_path)
+
+        print(f"[DEBUG] Template completo: {full_path}")  # Ajuda no debug
+
+        with open(full_path, "r", encoding="utf-8") as file:
             return Template(file.read())
 
     def send_booking_email(self, client_phone, summary):
         try:
-            masked_phone = f"{client_phone[:5]}...{client_phone[-3:]}"
+            display_phone = client_phone  # Mostra o número completo
             template = self._load_template()
             html_content = template.render(
-                cliente=masked_phone,
+                cliente=display_phone,
                 resumo=summary.replace("\n", "<br>")
             )
 
             msg = MIMEMultipart()
-            msg["From"] = f"Agendamentos Luar Clínica <{self.email_user}>"
+            msg["From"] = self.email_user
             msg["To"] = self.clinic_email
-            msg["Subject"] = f"✂️ Novo Agendamento - {masked_phone}"
+            msg["Subject"] = f"✂️ Novo Agendamento - {display_phone}"
             msg.attach(MIMEText(html_content, "html"))
 
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
@@ -49,10 +54,10 @@ class EmailManager:
     def send_feedback_email(self, client_phone, feedback_text):
         try:
             print("Capturando feedback do cliente")
-            masked_phone = f"{client_phone[:5]}...{client_phone[-3:]}"
+            display_phone = client_phone  # Mostra o número completo
             html_content = (
                 f"<h3>✨ Novo Feedback Recebido</h3>"
-                f"<p><strong>Cliente:</strong> {masked_phone}</p>"
+                f"<p><strong>Cliente:</strong> {display_phone}</p>"
                 f"<p><strong>Feedback:</strong><br>{feedback_text}</p>"
                 "<p style='font-size:12px; color:#666;'>🔒 Dados protegidos pela LGPD.</p>"
             )
@@ -62,7 +67,7 @@ class EmailManager:
             msg = MIMEMultipart()
             msg["From"] = self.email_user
             msg["To"] = self.clinic_email
-            msg["Subject"] = f"✨ Feedback recebido - {masked_phone}"
+            msg["Subject"] = f"✨ Feedback recebido - {display_phone}"
             msg.attach(MIMEText(html_content, "html"))
             print("variáveis inicializadas corretamente ✅"
                   + str(self.smtp_server) + " |" + str(self.smtp_port) + " |" + str(self.email_user) + " |" + str(self.email_password) + " |" + str(self.clinic_email)

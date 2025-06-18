@@ -84,11 +84,12 @@ def handle_message(phone, message):
         if message == "1":
             sessions.create_session(phone, "consentimento")
             whatsapp.send_message(phone, 
-                "🔒 *PROTEÇÃO DE DADOS*\nLeia nossa política completa:\nhttps://luarclinica.com.br/\n\nPara agendamento coletaremos:\n- Nome completo\n- Idade\n- Local do procedimento\n\n*Digite ACEITO para continuar ou CANCELAR para sair*"
+                "🔒 *PROTEÇÃO DE DADOS*\nLeia nossa política completa:\nhttps://luarclinica.com.br\n\nPara agendamento coletaremos:\n- Nome completo\n- Idade\n- Local do procedimento\n- *Número de telefone (para retorno do atendimento)*\n\n*Digite ACEITO para continuar ou CANCELAR para sair*"
             )
         else:
             whatsapp.send_message(phone, "Olá! Bem-vindo à Luar Clínica 🌙. Digite *1* para iniciar.")
         return
+
 
     if sessions.check_timeout(phone):
         whatsapp.send_message(phone, "⏱️ Atendimento encerrado por inatividade. Digite *1* para recomeçar.")
@@ -185,11 +186,14 @@ def process_flow(phone, message, flow_type):
     if message.lower() == "voltar":
         if step > 0:
             session["step"] -= 1
+            if session["answers"]:
+                session["answers"].pop()  # remove a resposta anterior salva
             previous_question = flow.get_question(session["step"])
             whatsapp.send_message(phone, previous_question)
         else:
             whatsapp.send_message(phone, "⚠️ Você já está na primeira pergunta.")
-        return
+        return  # importante sair aqui para não processar o resto do código
+
 
     if not flow.validate_answer(step, message):
         error_msg = "Resposta inválida."
