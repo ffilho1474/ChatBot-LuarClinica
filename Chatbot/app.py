@@ -1,12 +1,15 @@
 from flask import Flask, request, jsonify
 from Core.whatsapp_api import WhatsAppAPI
 from Core.tempo_sessao import SessionManager
+from Core.email_envio import EmailManager
+
 from Fluxos.fluxo_piercing import PiercingFlow
 from Fluxos.fluxo_queloide import KeloidFlow
 from Fluxos.fluxo_remocao_tattoo import TattooRemovalFlow
 from Fluxos.fluxo_glanuloma import GranulomaFlow
 from Fluxos.fluxo_pierc_preco import PrecoPiercingFlow
 from Fluxos.fluxo_pierc_cuidados import CuidadosPiercingFlow
+from Fluxos.fluxo_sugestão import SugestaoFlow
 
 import os
 import time
@@ -17,6 +20,7 @@ load_dotenv()
 app = Flask(__name__)
 whatsapp = WhatsAppAPI()
 sessions = SessionManager()
+email_manager = EmailManager()
 
 flows = {
     "perfuração": PiercingFlow(),
@@ -24,10 +28,10 @@ flows = {
     "tatuagem": TattooRemovalFlow(),
     "granuloma": GranulomaFlow(),
     "precos_piercing": PrecoPiercingFlow(),
-    "cuidados_piercing": CuidadosPiercingFlow()
+    "cuidados_piercing": CuidadosPiercingFlow(),
+    "sugestao": SugestaoFlow()
 }
 
-# Fluxos que requerem consentimento de saúde
 health_flows = ["queloide", "granuloma", "tatuagem"]
 
 @app.route("/")
@@ -46,15 +50,10 @@ def verify_webhook():
     print("❌ Falha na verificação")
     return "Erro na verificação", 403
 
-    if request.method == 'POST':
-        data = request.get_json()
-        print(f"📩 Evento recebido: {data}")  # Log seguro
-        return jsonify({"status": "success"}), 200
-    
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
-    print(f"📩 Evento recebido")  # Não logar conteúdo sensível
+    print(f"📩 Evento recebido")
     
     if data.get("entry"):
         for entry in data["entry"]:
@@ -62,15 +61,20 @@ def webhook():
                 if messages := change.get("value", {}).get("messages"):
                     for message in messages:
                         if "text" in message:
-                            # Limpeza básica da mensagem
                             clean_message = ''.join(e for e in message["text"]["body"] if e.isalnum() or e in ' .?!/,;:')
                             handle_message(message["from"], clean_message.lower())
     return "OK", 200
 
 def handle_message(phone, message):
-    print(f"📞 Mensagem de {phone[:5]}...")  # Não logar o número completo
+    if phone in sessions.sessions and sessions.sessions[phone].get("waiting_feedback"):
+        if message.strip():
+            email_manager.send_feedback_email(phone, message)
+            whatsapp.send_message(phone, "💙 Muito obrigado pelo seu feedback! Tenha um ótimo dia 🌙")
+            sessions.end_session(phone)
+        else:
+            whatsapp.send_message(phone, "Por favor, digite seu feedback ou envie uma mensagem.")
+        return
 
-    # Comando para exclusão de dados
     if message == "excluir dados":
         sessions.end_session(phone)
         whatsapp.send_message(phone, "✅ Seus dados foram excluídos com sucesso!")
@@ -79,20 +83,13 @@ def handle_message(phone, message):
     if phone not in sessions.sessions:
         if message == "1":
             sessions.create_session(phone, "consentimento")
-            # Modifique esta mensagem em app.py
             whatsapp.send_message(phone, 
-                "🔒 *PROTEÇÃO DE DADOS*\n"
-                "Leia nossa política completa:\n"
-                "https://luarclinica.com.br/\n\n"
-                "Para agendamento coletaremos:\n"
-                "- Nome completo\n"
-                "- Idade\n"
-                "- Local do procedimento\n\n"
-                "*Digite ACEITO para continuar ou CANCELAR para sair*"
+                "🔒 *PROTEÇÃO DE DADOS*\nLeia nossa política completa:\nhttps://luarclinica.com.br\n\nPara agendamento coletaremos:\n- Nome completo\n- Idade\n- Local do procedimento\n- *Número de telefone (para retorno do atendimento)*\n\n*Digite ACEITO para continuar ou CANCELAR para sair*"
             )
         else:
             whatsapp.send_message(phone, "Olá! Bem-vindo à Luar Clínica 🌙. Digite *1* para iniciar.")
         return
+
 
     if sessions.check_timeout(phone):
         whatsapp.send_message(phone, "⏱️ Atendimento encerrado por inatividade. Digite *1* para recomeçar.")
@@ -101,36 +98,25 @@ def handle_message(phone, message):
 
     session = sessions.sessions[phone]
 
-    # Estado de consentimento
     if session["procedure_type"] == "consentimento":
         if message == "aceito":
             session["procedure_type"] = "menu"
             whatsapp.send_message(phone, 
-                "Escolha alguma das opções abaixo, em caso de agendamento vamos pedir alguns dados pessoais para cadastrarmos na sua ficha de paciente: (Atendimento apenas para maiores de 18 anos) \n"
-                "1️⃣ Agendar Perfuração\n"
-                "2️⃣ Agendar Remoção de Queloide\n"
-                "3️⃣ Agendar Remoção de Tatuagem\n"
-                "4️⃣ Agendar Tratamento de Granuloma\n"
-                "5️⃣ Preços da Perfuração\n"
-                "6️⃣ Cuidados pós-perfuração"
+                "Escolha alguma das opções abaixo:\n1️⃣ Agendar Perfuração\n2️⃣ Agendar Remoção de Queloide\n3️⃣ Agendar Remoção de Tatuagem\n4️⃣ Agendar Tratamento de Granuloma\n5️⃣ Preços da Perfuração\n6️⃣ Cuidados pós-perfuração\n7️⃣ Sugestões de Melhorias"
             )
         else:
             whatsapp.send_message(phone, "Agendamento cancelado. Obrigada!")
             sessions.end_session(phone)
         return
 
-    # Novo estado: consentimento para dados de saúde
     if session["procedure_type"] == "consentimento_saude":
         if message == "concordo":
-            # Recupera o fluxo escolhido que estava temporariamente armazenado
             chosen_flow = session.get("chosen_flow")
             if chosen_flow in health_flows:
                 session["procedure_type"] = chosen_flow
                 session["step"] = 0
-                flow = flows[chosen_flow]
-                whatsapp.send_message(phone, flow.get_question(0))
+                process_flow(phone, "", chosen_flow)
             else:
-                # Caso não seja um fluxo de saúde, volta ao menu (não deveria acontecer)
                 session["procedure_type"] = "menu"
                 whatsapp.send_message(phone, "Ocorreu um erro. Por favor, escolha novamente.")
         else:
@@ -139,49 +125,34 @@ def handle_message(phone, message):
         return
 
     if session["procedure_type"] == "menu":
-        if message in ["1", "2", "3", "4", "5", "6"]:
+        if message in ["1", "2", "3", "4", "5", "6", "7"]:
             procedure_types = {
                 "1": "perfuração",
                 "2": "queloide",
                 "3": "tatuagem",
                 "4": "granuloma",
                 "5": "precos_piercing",
-                "6": "cuidados_piercing"
+                "6": "cuidados_piercing",
+                "7": "sugestao"
             }
             chosen_flow = procedure_types[message]
             session["procedure_type"] = chosen_flow
-            # Fluxos informativos (opções 5/6)
             if message in ["5", "6"]:
                 flow = flows[chosen_flow]
                 whatsapp.send_message(phone, flow.generate_summary([]))
                 sessions.end_session(phone)
             else:
-                # Verifica se é um fluxo que requer consentimento de saúde
                 if chosen_flow in health_flows:
-                    # Vamos para o estado de consentimento de saúde
                     session["procedure_type"] = "consentimento_saude"
-                    session["chosen_flow"] = chosen_flow  # Armazena temporariamente
+                    session["chosen_flow"] = chosen_flow
                     whatsapp.send_message(phone, 
-                        "⚠️ *CONSENTIMENTO PARA DADOS DE SAÚDE*\n"
-                        "Para o procedimento escolhido, precisamos coletar informações de saúde.\n"
-                        "Estes dados são essenciais para sua segurança durante o procedimento.\n\n"
-                        "*Digite CONCORDO para continuar ou CANCELAR para sair*"
+                        "⚠️ *CONSENTIMENTO PARA DADOS DE SAÚDE*\nPara o procedimento escolhido, precisamos coletar informações de saúde.\nEstes dados são essenciais para sua segurança durante o procedimento.\n\n*Digite CONCORDO para continuar ou CANCELAR para sair*"
                     )
                 else:
-                    # Fluxos com perguntas (opções 1 e 4) que não são de saúde
                     session["step"] = 0
-                    flow = flows[chosen_flow]
-                    whatsapp.send_message(phone, flow.get_question(0))
+                    process_flow(phone, "", chosen_flow)
         else:
-            whatsapp.send_message(phone, 
-                "Opção inválida. Escolha:\n"
-                "1️⃣ Perfuração\n"
-                "2️⃣ Remoção de Queloide\n"
-                "3️⃣ Remoção de Tatuagem\n"
-                "4️⃣ Tratamento de Granuloma\n"
-                "5️⃣ Preços da Perfuração\n"
-                "6️⃣ Cuidados pós-perfuração"
-            )
+            whatsapp.send_message(phone, "Opção inválida. Digite um número de 1 a 7.")
         return
 
     process_flow(phone, message, session["procedure_type"])
@@ -190,8 +161,40 @@ def process_flow(phone, message, flow_type):
     print(f"🔍 Processando fluxo {flow_type} para {phone[:5]}...")
     flow = flows[flow_type]
     session = sessions.sessions[phone]
+
+    # Instrução no início do fluxo
+    if message == "":
+        instructions = (
+            "ℹ️ *DICA:* A qualquer momento você pode digitar:\n"
+            "*menu* → para retornar ao menu\n"
+            "*voltar* → para voltar uma pergunta"
+        )
+        whatsapp.send_message(phone, instructions)
+        whatsapp.send_message(phone, flow.get_question(0))
+        return
+
     step = session["step"]
-    
+
+    # Comandos especiais
+    if message.lower() == "menu":
+        session["procedure_type"] = "menu"
+        whatsapp.send_message(phone, 
+            "Você voltou ao menu principal. Escolha uma opção:\n1⃣ Perfuração\n2⃣ Remoção de Queloide\n3⃣ Remoção de Tatuagem\n4⃣ Tratamento de Granuloma\n5⃣ Preços da Perfuração\n6⃣ Cuidados pós-perfuração\n7⃣ Sugestões de Melhorias"
+        )
+        return
+
+    if message.lower() == "voltar":
+        if step > 0:
+            session["step"] -= 1
+            if session["answers"]:
+                session["answers"].pop()  # remove a resposta anterior salva
+            previous_question = flow.get_question(session["step"])
+            whatsapp.send_message(phone, previous_question)
+        else:
+            whatsapp.send_message(phone, "⚠️ Você já está na primeira pergunta.")
+        return  # importante sair aqui para não processar o resto do código
+
+
     if not flow.validate_answer(step, message):
         error_msg = "Resposta inválida."
         if step in flow.validations:
@@ -201,13 +204,30 @@ def process_flow(phone, message, flow_type):
         return
 
     sessions.update_session(phone, message)
-    
-    if next_question := flow.get_question(session["step"]):
+    next_question = flow.get_question(session["step"])
+
+    if next_question:
         whatsapp.send_message(phone, next_question)
     else:
         summary = flow.generate_summary(session["answers"])
         whatsapp.send_message(phone, summary)
-        sessions.end_session(phone)
+
+        # 🚀 ENVIO DE E-MAIL AQUI
+        if flow_type in ["perfuração", "queloide", "tatuagem", "granuloma"]:
+            email_manager.send_booking_email(phone, summary)
+
+        if flow_type == "sugestao":
+            email_manager.send_feedback_email(phone, session["answers"][0])
+            whatsapp.send_message(phone, "💙 Sua sugestão foi enviada com sucesso! Muito obrigado 🌙")
+            sessions.end_session(phone)
+        else:
+            feedback_message = (
+                "\n✨ O que achou do nosso atendimento?\n"
+                "Sua opinião é muito importante para nós!\n"
+                "Caso queira, envie sugestões ou melhorias. 💙"
+            )
+            whatsapp.send_message(phone, feedback_message)
+            sessions.sessions[phone]["waiting_feedback"] = True
 
 if __name__ == "__main__": 
     print("🚀 Iniciando servidor Flask...")

@@ -3,3 +3,7 @@
 *.pyc
 
 .vscode/
+
+teste_enviomail.py
+
+teste_enviomail2.py
