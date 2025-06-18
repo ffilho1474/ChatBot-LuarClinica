@@ -6,7 +6,7 @@ class WhatsAppAPI:
     def __init__(self):
         self.token = os.getenv("WHATSAPP_TOKEN")
         self.phone_number_id = os.getenv("PHONE_NUMBER_ID")
-        self.base_url = f"https://graph.facebook.com/v19.0/{self.phone_number_id}/messages"
+        self.base_url = f"https://graph.facebook.com/v22.0/{self.phone_number_id}/messages"
 
     def sanitize_message(self, message):
         """Remove termos sensíveis para conformidade LGPD"""

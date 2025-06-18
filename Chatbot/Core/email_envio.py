@@ -15,7 +15,7 @@ class EmailManager:
         self.email_password = os.getenv("EMAIL_PASSWORD")  
         self.clinic_email = os.getenv("CLINIC_EMAIL") 
 
-    def _load_template(self, template_path="Templates/agendamento.html"):
+    def _load_template(self, template_path="Templates_HTML\agendamento.html"):
         with open(template_path, "r", encoding="utf-8") as file:
             return Template(file.read())
 
